@@ -1,165 +1,156 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel
 from passlib.hash import bcrypt
-from datetime import datetime
 from dotenv import load_dotenv
-from groq import Groq
+from datetime import datetime
+from gtts import gTTS
 from pathlib import Path
-import json
-import os
+from starlette.responses import StreamingResponse
+import os, json, io
+from groq import Groq
+from fastapi import UploadFile, File
+
+# === CONFIG === #
+app = FastAPI()
+USERS_FILE = "users.json"
+HISTORY_FILE = "history.json"
 
 load_dotenv()
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# FastAPI app
-app = FastAPI()
-
-# Groq client
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-if not GROQ_API_KEY:
-    raise RuntimeError("GROQ_API_KEY not found in environment variables")
-groq_client = Groq(api_key=GROQ_API_KEY)
-
-# CORS
+# Allow frontend connection
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Replace with specific URL in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Models
-class RegisterRequest(BaseModel):
-    username: str = Field(..., min_length=3, max_length=50)
-    email: EmailStr
-    password: str = Field(..., min_length=6)
+# Fake user DB
+fake_users_db = {
+    "admin": "1234",
+    "user": "password"
+}
 
+# Request body model
 class LoginRequest(BaseModel):
-    email: EmailStr
+    username: str
     password: str
 
 class TextInput(BaseModel):
     text: str
-    user_id: str
 
-class HistoryModel(BaseModel):
-    user_id: str
-    user_input: str
-    bot_response: str
-    source: str = "chat"
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+# === HELPERS === #
+def load_users():
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, "r") as f:
+            return json.load(f)
+    return {}
 
-# File paths
-USERS_FILE = "users.json"
-HISTORY_FILE = "history.json"
+def save_users(users):
+    with open(USERS_FILE, "w") as f:
+        json.dump(users, f, indent=4)
 
-# Helper functions to read and write JSON files
-def read_json_file(file_path):
-    if not Path(file_path).exists():
-        return []
-    with open(file_path, "r") as f:
-        return json.load(f)
+def save_to_history(user_input, ai_response):
+    entry = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "user": user_input,
+        "bot": ai_response
+    }
+    history = []
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, "r") as file:
+            history = json.load(file)
+    history.append(entry)
+    with open(HISTORY_FILE, "w") as file:
+        json.dump(history, file, indent=4)
 
-def write_json_file(file_path, data):
-    with open(file_path, "w") as f:
-        json.dump(data, f, default=str, indent=4)
+#History #
+@app.get("/history")
+def get_history():
+    history_file = Path("history.json")
+    if history_file.exists():
+        with open(history_file, "r") as f:
+            return json.load(f)
+    return []
 
-# Routes
+# === ROUTES === #
+
 @app.get("/")
-async def home():
-    return {"message": "Welcome to AI Voice Assistant API with JSON file storage"}
+def home():
+    return {"message": "Welcome to the AI Voice Assistant API"}
 
 @app.post("/register")
-async def register(data: RegisterRequest):
-    users = read_json_file(USERS_FILE)
-    existing_user = next((user for user in users if user["email"] == data.email), None)
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
+def register(data: LoginRequest):
+    users = load_users()
+    
+    if data.username in users:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    # Hash the password before saving it
     hashed_password = bcrypt.hash(data.password)
-    new_user = {
-        "username": data.username,
-        "email": data.email,
-        "password": hashed_password,
-        "created_at": datetime.utcnow()
-    }
-    users.append(new_user)
-    write_json_file(USERS_FILE, users)
-    return {"message": "User  registered successfully"}
+    
+    # Save user to the JSON file
+    users[data.username] = {"password": hashed_password}
+    save_users(users)
+    return {"message": "Registered successfully"}
 
 @app.post("/login")
-async def login(data: LoginRequest):
-    users = read_json_file(USERS_FILE)
-    user = next((user for user in users if user["email"] == data.email), None)
-    if not user or not bcrypt.verify(data.password, user["password"]):
+def login(data: LoginRequest):
+    users = load_users()
+    
+    if data.username not in users or not bcrypt.verify(data.password, users[data.username]["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    
     return {"message": "Login successful"}
 
+# AI response endpoint
 @app.post("/ai-response/")
-async def ai_response(input_data: TextInput):
+async def ai_response(input_text: TextInput):
     try:
-        response = groq_client.chat.completions.create(
+        response = client.chat.completions.create(
             model="llama3-8b-8192",
-            messages=[{"role": "user", "content": input_data.text}]
+            messages=[{"role": "user", "content": input_text.text}]
         )
-        reply = response.choices[0].message.content
+        if hasattr(response, 'choices') and response.choices:
+            reply = response.choices[0].message.content
+        else:
+            raise HTTPException(status_code=500, detail="Unexpected response format")
 
-        history_entry = HistoryModel(
-            user_id=input_data.user_id,
-            user_input=input_data.text,
-            bot_response=reply,
-            source="chat"
-        )
-        history = read_json_file(HISTORY_FILE)
-        history.append(history_entry.dict())
-        write_json_file(HISTORY_FILE, history)
-
+        save_to_history(input_text.text, reply)
         return {"response": reply}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# File upload endpoint
 @app.post("/upload/")
-async def upload_file(user_id: str, file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...)):
     try:
-        upload_dir = Path("uploaded_files")
-        upload_dir.mkdir(exist_ok=True)
-        file_location = upload_dir / file.filename
-        contents = await file.read()
+        # Save the uploaded file with its original filename
+        file_location = f"uploaded_files/{file.filename}"
         with open(file_location, "wb") as f:
-            f.write(contents)
+            f.write(await file.read())
 
-        input_text = contents.decode("utf-8", errors="ignore")
-        response = groq_client.chat.completions.create(
+        # Here you could process the file content as text, depending on its type
+        # If you want to extract text or process it, you can implement logic for that.
+        contents = await file.read()
+        input_text = contents.decode("utf-8", errors="ignore")  # Attempt to decode as text
+
+        # AI response
+        response = client.chat.completions.create(
             model="llama3-8b-8192",
             messages=[{"role": "user", "content": input_text}]
         )
-        reply = response.choices[0].message.content
 
-        history_entry = HistoryModel(
-            user_id=user_id,
-            user_input=input_text,
-            bot_response=reply,
-            source="upload"
-        )
-        history = read_json_file(HISTORY_FILE)
-        history.append(history_entry.dict())
-        write_json_file(HISTORY_FILE, history)
+        if hasattr(response, 'choices') and response.choices:
+            reply = response.choices[0].message.content
+        else:
+            raise HTTPException(status_code=500, detail="Unexpected response format")
 
-        return {"response": reply, "file_location": str(file_location)}
+        save_to_history(input_text, reply)
+        return {"response": reply, "file_location": file_location}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/history")
-async def get_user_history(user_id: str):
-    history = read_json_file(HISTORY_FILE)
-    user_history = [
-        {
-            "timestamp": h["timestamp"].strftime("%Y-%m-%d %H:%M:%S"),
-            "source": h["source"],
-            "user_input": h["user_input"],
-            "bot_response": h["bot_response"]
-        }
-        for h in history if h["user_id"] == user_id
-    ]
-    return user_history
