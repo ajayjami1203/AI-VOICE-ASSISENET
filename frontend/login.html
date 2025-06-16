@@ -17,6 +17,7 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      transition: background-color 0.3s;
     }
 
     .login-container {
@@ -28,13 +29,15 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       text-align: center;
       width: 350px;
+      animation: fadeIn 1s ease;
       color: white;
       position: relative;
+      z-index: 2;
     }
 
     h2 {
-      font-size: 24px;
       margin-bottom: 20px;
+      font-size: 24px;
     }
 
     .glitch {
@@ -77,6 +80,11 @@
       100% { clip-path: inset(0 0 70% 0); }
     }
 
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     input {
       width: 100%;
       padding: 12px;
@@ -85,6 +93,7 @@
       border-radius: 8px;
       background-color: #1a1a2e;
       color: white;
+      transition: 0.3s;
       box-shadow: 0 0 10px #6A5ACD;
     }
 
@@ -101,8 +110,8 @@
       color: white;
       border-radius: 8px;
       cursor: pointer;
-      box-shadow: 0 0 15px #6A5ACD;
       transition: 0.3s;
+      box-shadow: 0 0 15px #6A5ACD;
     }
 
     button:hover {
@@ -136,15 +145,20 @@
       cursor: pointer;
     }
 
-    .dark body {
+    body.dark {
       background-color: #111;
     }
 
-    .dark .login-container {
+    body.dark .login-container {
       box-shadow: 0 0 25px #ff00ff;
     }
 
-    /* Modal for login success */
+    body.dark input,
+    body.dark button {
+      box-shadow: 0 0 10px #ff00ff;
+    }
+
+    /* Success Modal */
     #success-modal {
       position: fixed;
       top: 0;
@@ -192,8 +206,8 @@
   <div class="login-container">
     <h2 class="glitch" data-text="Login to AI Chat">Login to AI Chat</h2>
     <form onsubmit="handleLogin(event)" autocomplete="off">
-      <input type="text" id="username" placeholder="Username" required />
-      <input type="password" id="password" placeholder="Password" required />
+      <input type="text" placeholder="Username" required id="username"  autocomplete="off">
+      <input type="password" placeholder="Password" required id="password"  autocomplete="off">
       <button type="submit">Login</button>
     </form>
     <div class="toggle">
@@ -225,16 +239,15 @@
         body: JSON.stringify({ username, password })
       })
       .then(response => {
-        if (!response.ok) {
-          throw new Error("Invalid credentials");
-        }
+        if (!response.ok) throw new Error("Login failed");
         return response.json();
       })
       .then(data => {
+        // Show the success modal
         document.getElementById("success-modal").style.display = "flex";
       })
       .catch(err => {
-        alert("Invalid username or password.");
+        alert("Invalid credentials.");
         console.error(err);
       });
     }
