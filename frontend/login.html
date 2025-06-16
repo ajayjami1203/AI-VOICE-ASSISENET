@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - AI Chat</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #0e0e1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .login-container {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 30px 40px;
+      border-radius: 16px;
+      box-shadow: 0 0 25px #6A5ACD;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+      width: 350px;
+      color: white;
+      position: relative;
+    }
+
+    h2 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    .glitch {
+      position: relative;
+      font-size: 26px;
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    .glitch::before,
+    .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      left: 0;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .glitch::before {
+      top: -2px;
+      left: 2px;
+      color: #f0f;
+      animation: glitchTop 1s infinite linear alternate-reverse;
+    }
+
+    .glitch::after {
+      top: 2px;
+      left: -2px;
+      color: #0ff;
+      animation: glitchBot 1s infinite linear alternate-reverse;
+    }
+
+    @keyframes glitchTop {
+      0% { clip-path: inset(0 0 80% 0); }
+      100% { clip-path: inset(30% 0 50% 0); }
+    }
+
+    @keyframes glitchBot {
+      0% { clip-path: inset(60% 0 0 0); }
+      100% { clip-path: inset(0 0 70% 0); }
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #6A5ACD;
+      border-radius: 8px;
+      background-color: #1a1a2e;
+      color: white;
+      box-shadow: 0 0 10px #6A5ACD;
+    }
+
+    input:focus {
+      outline: none;
+      box-shadow: 0 0 15px #6A5ACD;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      background-color: #6A5ACD;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 15px #6A5ACD;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #8A2BE2;
+      box-shadow: 0 0 20px #8A2BE2;
+    }
+
+    .toggle {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #ccc;
+    }
+
+    .toggle a {
+      color: #8A2BE2;
+      text-decoration: none;
+    }
+
+    .toggle a:hover {
+      text-decoration: underline;
+    }
+
+    .dark-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      color: white;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .dark body {
+      background-color: #111;
+    }
+
+    .dark .login-container {
+      box-shadow: 0 0 25px #ff00ff;
+    }
+
+    /* Modal for login success */
+    #success-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background-color: rgba(0, 0, 0, 0.75);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .modal-content {
+      background-color: #1a1a2e;
+      color: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 0 20px #6A5ACD;
+    }
+
+    .modal-content button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #6A5ACD;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 0 10px #6A5ACD;
+    }
+
+    .modal-content button:hover {
+      background-color: #8A2BE2;
+      box-shadow: 0 0 15px #8A2BE2;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Dark Mode Toggle -->
+  <button class="dark-toggle" onclick="toggleDarkMode()">🌓</button>
+
+  <div class="login-container">
+    <h2 class="glitch" data-text="Login to AI Chat">Login to AI Chat</h2>
+    <form onsubmit="handleLogin(event)" autocomplete="off">
+      <input type="text" id="username" placeholder="Username" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+    </form>
+    <div class="toggle">
+      Don't have an account? <a href="register.html">Register</a>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div id="success-modal">
+    <div class="modal-content">
+      <p>✅ Login successful!</p>
+      <button onclick="redirectToHome()">OK</button>
+    </div>
+  </div>
+
+  <script>
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark");
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+
+      fetch("http://127.0.0.1:8000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Invalid credentials");
+        }
+        return response.json();
+      })
+      .then(data => {
+        document.getElementById("success-modal").style.display = "flex";
+      })
+      .catch(err => {
+        alert("Invalid username or password.");
+        console.error(err);
+      });
+    }
+
+    function redirectToHome() {
+      window.location.href = "index.html";
+    }
+  </script>
+
+</body>
+</html>

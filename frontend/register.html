@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register - AI Chat</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #0e0e1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      transition: background-color 0.3s ease;
+    }
+
+    .register-container {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 30px 40px;
+      border-radius: 16px;
+      box-shadow: 0 0 25px #6A5ACD;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+      width: 370px;
+      animation: fadeIn 1s ease;
+      color: white;
+      position: relative;
+      z-index: 2;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #6A5ACD;
+      border-radius: 8px;
+      background-color: #1a1a2e;
+      color: white;
+      transition: 0.3s;
+      box-shadow: 0 0 10px #6A5ACD;
+    }
+
+    input:focus {
+      outline: none;
+      box-shadow: 0 0 15px #6A5ACD;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      background-color: #6A5ACD;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+      box-shadow: 0 0 15px #6A5ACD;
+    }
+
+    button:hover {
+      background-color: #8A2BE2;
+      box-shadow: 0 0 20px #8A2BE2;
+    }
+
+    .toggle {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #ccc;
+    }
+
+    .toggle a {
+      color: #8A2BE2;
+      text-decoration: none;
+    }
+
+    .toggle a:hover {
+      text-decoration: underline;
+    }
+
+    .dark-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      color: white;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    body.dark {
+      background-color: #111;
+    }
+
+    body.dark .register-container {
+      box-shadow: 0 0 25px #ff00ff;
+    }
+
+    body.dark input,
+    body.dark button {
+      box-shadow: 0 0 10px #ff00ff;
+    }
+
+    #loading-spinner {
+      display: none;
+      margin-top: 15px;
+      color: #ccc;
+      font-size: 14px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #success-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .modal-content {
+      background-color: #1a1a2e;
+      color: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 0 20px #6A5ACD;
+    }
+
+    .modal-content button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #6A5ACD;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 0 10px #6A5ACD;
+    }
+
+    .modal-content button:hover {
+      background-color: #8A2BE2;
+      box-shadow: 0 0 15px #8A2BE2;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Theme toggle -->
+  <button class="dark-toggle" onclick="toggleTheme()">🌓</button>
+
+  <div class="register-container">
+    <h2>Create Account</h2>
+
+    <form onsubmit="handleRegister(event)">
+      <input type="text" placeholder="Username" required id="username">
+      <input type="email" placeholder="Email" required id="email">
+      <div style="position: relative;">
+        <input type="password" placeholder="Password" required id="password">
+        <span onclick="togglePassword()" style="position: absolute; top: 50%; right: 12px; transform: translateY(-50%); cursor: pointer; color: #ccc;">👁️</span>
+      </div>
+
+      <button type="submit">Register</button>
+    </form>
+
+    <div id="loading-spinner">🔄 Creating your account...</div>
+
+    <div class="toggle">
+      Already have an account? <a href="login.html">Login</a>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div id="success-modal">
+    <div class="modal-content">
+      <p>✅ Account created successfully!</p>
+      <button onclick="redirectToLogin()">OK</button>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword() {
+      const passwordInput = document.getElementById("password");
+      const type = passwordInput.getAttribute("type");
+      passwordInput.setAttribute("type", type === "password" ? "text" : "password");
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+    }
+
+    function handleRegister(e) {
+      e.preventDefault();
+      const username = document.getElementById("username").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      if (!username || !email || !password) {
+        alert("Please fill in all fields.");
+        return;
+      }
+
+      const spinner = document.getElementById("loading-spinner");
+      spinner.style.display = "block";
+
+      fetch("http://127.0.0.1:8000/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: username,
+          email: email,
+          password: password
+        })
+      })
+      .then(response => {
+        spinner.style.display = "none";
+        if (!response.ok) throw new Error("Registration failed");
+        return response.json();
+      })
+      .then(data => {
+        document.getElementById("success-modal").style.display = "flex";
+      })
+      .catch(err => {
+        spinner.style.display = "none";
+        alert("Could not register. Try again.");
+        console.error(err);
+      });
+    }
+
+    function redirectToLogin() {
+      window.location.href = "login.html";
+    }
+  </script>
+
+</body>
+</html>

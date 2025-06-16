@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Chat - Voice & GPT</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+    :root {
+      --bg: linear-gradient(135deg, #4B0082, #6A5ACD);
+      --chat-bg: rgba(255, 255, 255, 0.05);
+      --text: #fff;
+      --input-bg: rgba(255, 255, 255, 0.1);
+      --user-bg: rgba(255, 182, 255, 0.3);
+      --bot-bg: rgba(255, 255, 255, 0.1);
+    }
+
+    body.light {
+      --bg: #f0f0f0;
+      --chat-bg: #fff;
+      --text: #222;
+      --input-bg: #eee;
+      --user-bg: #dcdcdc;
+      --bot-bg: #f1f1f1;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      transition: 0.3s ease;
+      overflow: hidden;
+    }
+
+    .background-shapes {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .background-shapes span {
+      position: absolute;
+      display: block;
+      width: 20px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      animation: float 20s linear infinite;
+      border-radius: 50%;
+    }
+
+    @keyframes float {
+      from {transform: translateY(100vh);}
+      to {transform: translateY(-10vh);}
+    }
+
+    .chat-container {
+      z-index: 1;
+      backdrop-filter: blur(20px);
+      background: var(--chat-bg);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 30px rgba(106, 90, 205, 0.6);
+      border-radius: 20px;
+      padding: 20px;
+      width: 380px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      animation: fadeIn 0.6s ease;
+    }
+
+    .chat-box {
+      height: 320px;
+      overflow-y: auto;
+      margin-bottom: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message {
+      display: flex;
+      align-items: flex-end;
+      margin: 5px 0;
+      max-width: 80%;
+      gap: 10px;
+    }
+
+    .message span.avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .message .bubble {
+      background: var(--bot-bg);
+      padding: 10px;
+      border-radius: 10px;
+      color: var(--text);
+      backdrop-filter: blur(4px);
+      animation: fadeInUp 0.3s ease forwards;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .message.user .bubble {
+      background: var(--user-bg);
+    }
+
+    input[type="text"] {
+      width: calc(100% - 100px);
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      background: var(--input-bg);
+      color: var(--text);
+      outline: none;
+    }
+
+    input::placeholder {
+      color: #aaa;
+    }
+
+    button {
+      background: linear-gradient(to right, #6A5ACD, #8A2BE2);
+      border: none;
+      color: white;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-left: 5px;
+      transition: 0.3s;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: linear-gradient(to right, #7B68EE, #4B0082);
+    }
+
+    .mic-btn {
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: #D8BFD8;
+      margin-left: 5px;
+      cursor: pointer;
+    }
+
+    .mic-btn:hover {
+      color: #fff;
+    }
+
+    #theme-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: 2px solid #fff;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .file-label {
+      display: inline-block;
+      padding: 10px;
+      background: linear-gradient(to right, #6A5ACD, #8A2BE2);
+      color: white;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      margin-left: 5px;
+      transition: 0.3s;
+      font-weight: bold;
+    }
+
+    .file-label:hover {
+      background: linear-gradient(to right, #7B68EE, #4B0082);
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top: 2px solid #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0; transform: scale(0.95);}
+      to {opacity: 1; transform: scale(1);}
+    }
+
+    @keyframes fadeInUp {
+      from {opacity: 0; transform: translateY(15px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+  </style>
+</head>
+<body>
+  <div class="background-shapes">
+    <span style="left: 10%; animation-duration: 18s;"></span>
+    <span style="left: 25%; animation-duration: 24s;"></span>
+    <span style="left: 40%; animation-duration: 16s;"></span>
+    <span style="left: 55%; animation-duration: 20s;"></span>
+    <span style="left: 70%; animation-duration: 22s;"></span>
+  </div>
+
+  <div class="chat-container">
+    <div style="position: absolute; top: 10px; right: 10px;">
+      <button id="settings-toggle">⚙️ Settings</button>
+      <div id="settings-menu" style="display: none; position: absolute; top: 35px; right: 0; background: var(--chat-bg); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.2); z-index: 2;">
+        <button onclick="showHistory()">🕘 History</button><br>
+        <button onclick="toggleTheme()">🌗 Theme</button><br>
+        <button onclick="logout()">🚪 Logout</button>
+      </div>
+    </div>
+    <div class="chat-box" id="chat-box">
+      <div class="message">
+        <span class="avatar">🤖</span>
+        <div class="bubble">Hello! How can I assist you today?</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 5px;">
+      <input type="text" placeholder="Type your message..." id="user-input" />
+      <button onclick="sendMessage()">Send</button>
+      <button class="mic-btn" onclick="startListening()">🎙️</button>
+      
+      <label for="file-input" class="file-label">➕</label>
+      <input type="file" id="file-input" accept=".txt" hidden />
+      <button onclick="sendFile()">Send File</button>
+    </div>
+  </div>
+
+  
+  <div id="logout-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: black; border: 1px solid rgba(255,255,255,0.3); padding: 30px; border-radius: 12px; text-align: center;
+  z-index: 10; box-shadow: 0 0 20px rgba(0,0,0,0.3);">
+    <p style="font-size: 16px; margin-bottom: 20px;">Thank you for using our website!</p>
+    <button onclick="redirectToLogin()" style="padding: 8px 16px; background: #6A5ACD; border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer;">OK</button>
+  </div>
+  <script>
+
+document.getElementById("settings-toggle").addEventListener("click", function () {
+    const menu = document.getElementById("settings-menu");
+    menu.style.display = menu.style.display === "none" ? "block" : "none";
+  });
+
+  function toggleTheme() {
+    const body = document.body;
+    const isLight = body.classList.toggle("light");
+    localStorage.setItem("theme", isLight ? "light" : "dark");
+    document.getElementById("settings-menu").style.display = "none";
+  }
+
+  function logout() {
+  document.getElementById("logout-modal").style.display = "block";
+}
+
+function redirectToLogin() {
+  window.location.href = "login.html";
+}
+
+function showHistory() {
+  fetch("http://127.0.0.1:8000/history")
+    .then(response => response.json())
+    .then(data => {
+      const chatBox = document.getElementById("chat-box");
+      chatBox.innerHTML = ""; // Clear previous chat
+
+      const historyTitle = document.createElement("div");
+      historyTitle.className = "message";
+      historyTitle.innerHTML = `<span class="avatar">📜</span><div class="bubble"><strong>Chat History:</strong></div>`;
+      chatBox.appendChild(historyTitle);
+
+      data.forEach(entry => {
+        if (entry.user) {
+          const userMsg = document.createElement("div");
+          userMsg.className = "message user";
+          userMsg.innerHTML = `<span class="avatar">🧑</span><div class="bubble">${entry.user}</div>`;
+          chatBox.appendChild(userMsg);
+        }
+
+        if (entry.bot) {
+          const botMsg = document.createElement("div");
+          botMsg.className = "message";
+          botMsg.innerHTML = `<span class="avatar">🤖</span><div class="bubble">${entry.bot}</div>`;
+          chatBox.appendChild(botMsg);
+        }
+      });
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+      document.getElementById("settings-menu").style.display = "none";
+    })
+    .catch(err => {
+      alert("Failed to load chat history.");
+      console.error(err);
+    });
+}
+
+
+  window.onload = function () {
+    const storedTheme = localStorage.getItem("theme") || "dark";
+    if (storedTheme === "light") {
+      document.body.classList.add("light");
+    }
+  };
+
+    function sendMessage() {
+      const input = document.getElementById("user-input");
+      const message = input.value.trim();
+      if (message !== "") {
+        const chatBox = document.getElementById("chat-box");
+
+        const msg = document.createElement("div");
+        msg.className = "message user";
+        msg.innerHTML = `<span class="avatar">🧑</span><div class="bubble">${message}</div>`;
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        input.value = "";
+
+        const botMsg = document.createElement("div");
+        botMsg.className = "message";
+        botMsg.id = "bot-loading";
+        botMsg.innerHTML = `<span class="avatar">🤖</span><div class="bubble"><span class="loading"></span></div>`;
+        chatBox.appendChild(botMsg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        getAIResponse(message);
+      }
+    }
+
+    function getAIResponse(userMessage) {
+      fetch("http://127.0.0.1:8000/ai-response/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: userMessage })
+      })
+      .then(response => response.json())
+      .then(data => {
+        const chatBox = document.getElementById("chat-box");
+        const botLoading = document.getElementById("bot-loading");
+        if (botLoading) botLoading.remove();
+
+        const botMsg = document.createElement("div");
+        botMsg.className = "message";
+        botMsg.innerHTML = `<span class="avatar">🤖</span><div class="bubble">${data.response}</div>`;
+        chatBox.appendChild(botMsg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        speakResponse(data.response);
+      })
+      .catch(err => console.error("Error:", err));
+    }
+
+    function speakResponse(text) {
+      const speech = new SpeechSynthesisUtterance();
+      speech.text = text;
+      speech.lang = "en-US";
+      speech.rate = 1;
+      speech.volume = 1;
+      window.speechSynthesis.speak(speech);
+    }
+
+    function startListening() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "en-US";
+      recognition.start();
+
+      recognition.onresult = function (event) {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById("user-input").value = transcript;
+        sendMessage();
+      };
+
+      recognition.onerror = function (event) {
+        alert("Voice recognition error: " + event.error);
+      };
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle("light");
+    }
+
+    function sendFile() {
+      const fileInput = document.getElementById("file-input");
+      const file = fileInput.files[0];
+
+      if (!file) {
+        alert("Please select a file.");
+        return;
+      }
+
+      const chatBox = document.getElementById("chat-box");
+
+      const msg = document.createElement("div");
+      msg.className = "message user";
+      msg.innerHTML = `<span class="avatar">📄</span><div class="bubble">Uploaded File: ${file.name}</div>`;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      const botMsg = document.createElement("div");
+      botMsg.className = "message";
+      botMsg.id = "bot-loading";
+      botMsg.innerHTML = `<span class="avatar">🤖</span><div class="bubble"><span class="loading"></span></div>`;
+      chatBox.appendChild(botMsg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      fetch("http://127.0.0.1:8000/upload/", {
+        method: "POST",
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        const botLoading = document.getElementById("bot-loading");
+        if (botLoading) botLoading.remove();
+
+        const botMsg = document.createElement("div");
+        botMsg.className = "message";
+        botMsg.innerHTML = `<span class="avatar">🤖</span><div class="bubble">${data.response}</div>`;
+        chatBox.appendChild(botMsg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        speakResponse(data.response);
+      })
+      .catch(error => {
+        alert("Error uploading file.");
+        console.error(error);
+      });
+    }
+
+    // Trigger sendMessage() on Enter key
+    document.getElementById("user-input").addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault(); // Prevent form submission
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>

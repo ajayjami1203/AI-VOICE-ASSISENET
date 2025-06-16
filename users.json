@@ -1,0 +1,24 @@
+{
+    "testuser": "$2b$12$3dG0uAecrB2lDoqFwLZPAe52v/ez5LMwik0r20BSrHTjXYMyF71m.",
+    "ajay": {
+        "password": "$2b$12$87GC80s.7D2TMJZzT/IxTum8z5Xig7bJcNtvJ7B/FjS5Dl/lj0ux."
+    },
+    "ajju": {
+        "password": "$2b$12$aQneui3yzCPMa4UhnqZHCeBaPK/pZbReS.iNDp1NhVbm49gAliiOy"
+    },
+    "aja": {
+        "password": "$2b$12$ZkjbjCLyynLHPsLFx784Bev55PqbsfWcU4ToES2V5T2mpuOwCIrm2"
+    },
+    "ajay jami": {
+        "password": "$2b$12$vTmFe7ZoS9qHfj00vh2/sOLp.9Umk.V4nuXzSkD8zGibirnKJRW0a"
+    },
+    "yaswanth": {
+        "password": "$2b$12$Dp1Q/e2XfBo35fmdRbTJT.Pfkga2U.GcB8L5YMUClJGBRKyiNDJ.W"
+    },
+    "venky": {
+        "password": "$2b$12$eRBJ/17zZBx8TM0s.mVg1.R80iLXUEoeslGUgvql75wmWH.L6knKK"
+    },
+    "ajay1": {
+        "password": "$2b$12$qPuRhPfg17yVFc2hdgFB.eiwTnW9yfjTbwuGYGCKGfE6QH/w/SybO"
+    }
+}

@@ -1,0 +1,22 @@
+💻 Project Spotlight: Calculator Application
+
+I’m excited to showcase one of my recent projects—a fully functional Calculator Application! 🎉
+
+🔢 Features:
+✔️ Supports essential arithmetic operations: addition, subtraction, multiplication, and division
+✔️ User-friendly interface for seamless calculations
+
+🎨 Design:
+With HTML & CSS, I created a clean, responsive, and visually appealing UI, ensuring a smooth user experience.
+
+⚙️ Functionality:
+Using JavaScript, I implemented the logic for dynamic calculations, handling user input efficiently and delivering accurate results.
+
+🌟 Takeaway:
+This project strengthened my front-end development skills, particularly DOM manipulation and responsive design, while demonstrating how HTML, CSS, and JavaScript work together to create interactive web applications.
+
+🔗 Check it out here #Netlify LINK: https://calculator-main1.netlify.app/
+
+#GITHUB LINK :  https://github.com/ajayjami1203/Batch11/tree/ajay/calc1
+
+#FrontendDevelopment #JavaScript #WebDevelopment #TechProjects #PortfolioShowcase
