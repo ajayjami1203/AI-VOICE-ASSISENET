@@ -6,20 +6,13 @@ from datetime import datetime
 from dotenv import load_dotenv
 from groq import Groq
 from pathlib import Path
-import motor.motor_asyncio
+import json
 import os
 
 load_dotenv()
 
 # FastAPI app
 app = FastAPI()
-
-# MongoDB connection
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URL)
-db = client["ai_voice_assistant"]
-users_collection = db["users"]
-history_collection = db["history"]
 
 # Groq client
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -57,29 +50,48 @@ class HistoryModel(BaseModel):
     source: str = "chat"
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
+# File paths
+USERS_FILE = "users.json"
+HISTORY_FILE = "history.json"
+
+# Helper functions to read and write JSON files
+def read_json_file(file_path):
+    if not Path(file_path).exists():
+        return []
+    with open(file_path, "r") as f:
+        return json.load(f)
+
+def write_json_file(file_path, data):
+    with open(file_path, "w") as f:
+        json.dump(data, f, default=str, indent=4)
+
 # Routes
 @app.get("/")
 async def home():
-    return {"message": "Welcome to AI Voice Assistant API with MongoDB"}
+    return {"message": "Welcome to AI Voice Assistant API with JSON file storage"}
 
 @app.post("/register")
 async def register(data: RegisterRequest):
-    existing_user = await users_collection.find_one({"email": data.email})
+    users = read_json_file(USERS_FILE)
+    existing_user = next((user for user in users if user["email"] == data.email), None)
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_password = bcrypt.hash(data.password)
-    await users_collection.insert_one({
+    new_user = {
         "username": data.username,
         "email": data.email,
         "password": hashed_password,
         "created_at": datetime.utcnow()
-    })
-    return {"message": "User registered successfully"}
+    }
+    users.append(new_user)
+    write_json_file(USERS_FILE, users)
+    return {"message": "User  registered successfully"}
 
 @app.post("/login")
 async def login(data: LoginRequest):
-    user = await users_collection.find_one({"email": data.email})
+    users = read_json_file(USERS_FILE)
+    user = next((user for user in users if user["email"] == data.email), None)
     if not user or not bcrypt.verify(data.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return {"message": "Login successful"}
@@ -99,7 +111,10 @@ async def ai_response(input_data: TextInput):
             bot_response=reply,
             source="chat"
         )
-        await history_collection.insert_one(history_entry.dict())
+        history = read_json_file(HISTORY_FILE)
+        history.append(history_entry.dict())
+        write_json_file(HISTORY_FILE, history)
+
         return {"response": reply}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -127,7 +142,9 @@ async def upload_file(user_id: str, file: UploadFile = File(...)):
             bot_response=reply,
             source="upload"
         )
-        await history_collection.insert_one(history_entry.dict())
+        history = read_json_file(HISTORY_FILE)
+        history.append(history_entry.dict())
+        write_json_file(HISTORY_FILE, history)
 
         return {"response": reply, "file_location": str(file_location)}
     except Exception as e:
@@ -135,14 +152,14 @@ async def upload_file(user_id: str, file: UploadFile = File(...)):
 
 @app.get("/history")
 async def get_user_history(user_id: str):
-    history_cursor = history_collection.find({"user_id": user_id}).sort("timestamp", -1)
-    history = await history_cursor.to_list(length=100)
-    return [
+    history = read_json_file(HISTORY_FILE)
+    user_history = [
         {
             "timestamp": h["timestamp"].strftime("%Y-%m-%d %H:%M:%S"),
             "source": h["source"],
             "user_input": h["user_input"],
             "bot_response": h["bot_response"]
         }
-        for h in history
+        for h in history if h["user_id"] == user_id
     ]
+    return user_history
